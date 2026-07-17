@@ -1,0 +1,38 @@
+name: Deploy via SFTP/FTP
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  deploy:
+    name: Upload de Arquivos para Hospedagem Própria
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sincronizar Arquivos via FTP/SFTP
+        uses: SamKirkland/FTP-Deploy-Action@v4
+        with:
+          server: ${{ secrets.HOST_SERVIDOR }}
+          username: ${{ secrets.USUARIO_FTP }}
+          password: ${{ secrets.SENHA_FTP }}
+          port: ${{ secrets.PORTA_FTP }}
+          server-dir: ${{ secrets.DIRETORIO_REMOTO }}
+          # Enviando apenas os arquivos estáticos necessários da raiz do repositório
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/src/**
+            **/.env.example
+            **/package.json
+            **/package-lock.json
+            **/tsconfig.json
+            **/vite.config.ts
+            **/bun.lock
+            **/metadata.json
