@@ -153,20 +153,35 @@ export default function CozinhaPanel({ pedidos, onMarcarPronto, onLimparHistoric
 
                       {/* Itens do Ticket */}
                       <div className="p-4 space-y-3 flex-1">
-                        {[
-                          ...pedido.pratos.map(p => ({ ...p, type: 'pratos' })),
-                          ...pedido.bebidas.map(b => ({ ...b, type: 'bebidas' })),
-                          ...pedido.sobremesas.map(s => ({ ...s, type: 'sobremesas' }))
-                        ].map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-3 text-base">
-                            <span className="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-lg text-lg shadow-sm">
-                              {item.emoji}
+                        {(pedido.itens && Array.isArray(pedido.itens)
+                          ? pedido.itens
+                          : [
+                              ...(pedido.pratos || []).map(p => ({ ...p, quantidade: 1 })),
+                              ...(pedido.bebidas || []).map(b => ({ ...b, quantidade: 1 })),
+                              ...(pedido.sobremesas || []).map(s => ({ ...s, quantidade: 1 }))
+                            ]
+                        ).map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-base">
+                            <div className="flex items-center gap-3">
+                              <span className="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-lg text-lg shadow-sm">
+                                {item.emoji}
+                              </span>
+                              <span className="font-semibold text-slate-700 text-sm uppercase">{item.nome}</span>
+                            </div>
+                            <span className="bg-green-100 text-green-800 font-black px-2.5 py-0.5 rounded-lg text-xs">
+                              x{item.quantidade || 1}
                             </span>
-                            <span className="font-semibold text-slate-700 text-sm uppercase">{item.nome}</span>
                           </div>
                         ))}
                       </div>
                     </div>
+
+                    {pedido.valorTotal !== undefined && (
+                      <div className="px-4 pb-3 flex justify-between items-center text-xs text-slate-500 font-bold border-t border-slate-50 pt-2">
+                        <span>VALOR TOTAL:</span>
+                        <span className="text-amber-600 font-extrabold text-sm">R$ {pedido.valorTotal.toFixed(2)}</span>
+                      </div>
+                    )}
 
                     {/* Botão Concluir */}
                     <button
@@ -194,17 +209,32 @@ export default function CozinhaPanel({ pedidos, onMarcarPronto, onLimparHistoric
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {prontos.slice().reverse().map(pedido => {
-                const todosItens = [...pedido.pratos, ...pedido.bebidas, ...pedido.sobremesas];
+                const todosItens = pedido.itens && Array.isArray(pedido.itens)
+                  ? pedido.itens
+                  : [
+                      ...(pedido.pratos || []),
+                      ...(pedido.bebidas || []),
+                      ...(pedido.sobremesas || [])
+                    ];
                 return (
                   <div key={pedido.id} className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex flex-col justify-between opacity-70 hover:opacity-100 transition-all">
                     <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1">
                       <span className="text-xs font-extrabold text-slate-700">Mesa {pedido.mesa}</span>
                       <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/50 uppercase">Pronto</span>
                     </div>
-                    <div className="text-sm truncate mb-1" title={todosItens.map(i => i.nome).join(', ')}>
+                    <div className="text-sm truncate mb-1" title={todosItens.map(i => `${i.quantidade || 1}x ${i.nome}`).join(', ')}>
                       {todosItens.map(i => i.emoji).join(' ')}
                     </div>
-                    <span className="text-[9px] text-slate-400 font-medium">{new Date(pedido.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-[9px] text-slate-400 font-medium">
+                        {pedido.timestamp ? new Date(pedido.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
+                      </span>
+                      {pedido.valorTotal !== undefined && (
+                        <span className="text-[10px] font-black text-amber-600">
+                          R$ {pedido.valorTotal.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })}

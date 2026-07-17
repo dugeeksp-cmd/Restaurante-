@@ -1,4 +1,5 @@
-name: Deploy via SFTP/FTP
+name: Deploy Automático via FTP
+
 on:
   push:
     branches:
@@ -6,33 +7,21 @@ on:
       - master
 
 jobs:
-  deploy:
-    name: Upload de Arquivos para Hospedagem Própria
+  ftp-deploy:
+    name: Upload dos Arquivos do Restaurante
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout do Repositório
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Sincronizar Arquivos via FTP/SFTP
-        uses: SamKirkland/FTP-Deploy-Action@v4
-        with:
-          server: ${{ secrets.HOST_SERVIDOR }}
-          username: ${{ secrets.USUARIO_FTP }}
-          password: ${{ secrets.SENHA_FTP }}
-          port: ${{ secrets.PORTA_FTP }}
-          server-dir: ${{ secrets.DIRETORIO_REMOTO }}
-          # Enviando apenas os arquivos estáticos necessários da raiz do repositório
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/src/**
-            **/.env.example
-            **/package.json
-            **/package-lock.json
-            **/tsconfig.json
-            **/vite.config.ts
-            **/bun.lock
-            **/metadata.json
+    steps:
+    - name: 🚚 Baixando o código do repositório
+      uses: actions/checkout@v4
+
+    - name: 🚀 Subindo arquivos para a hospedagem pessoal
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: ${{ secrets.HOST_SERVIDOR }}
+        username: ${{ secrets.USUARIO_FTP }}
+        password: ${{ secrets.SENHA_FTP }}
+        port: ${{ secrets.PORTA_FTP }}
+        server-dir: ${{ secrets.DIRETORIO_REMOTO }}
+        white-list: |
+          *.html

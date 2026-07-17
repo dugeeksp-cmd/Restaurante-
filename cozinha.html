@@ -48,7 +48,7 @@
       </h2>
       <button 
         id="btn-limpar-historico" 
-        class="text-xs text-slate-400 hover:text-rose-400 font-medium transition-colors border border-slate-700 hover:border-rose-500/30 px-3 py-1.5 rounded-lg bg-slate-800/40"
+        class="text-xs text-slate-400 hover:text-rose-400 font-medium transition-colors border border-slate-700 hover:border-rose-500/30 px-3 py-1.5 rounded-lg bg-slate-800/40 cursor-pointer"
       >
         Limpar Histórico Local
       </button>
@@ -90,15 +90,10 @@
       collection, 
       onSnapshot, 
       doc, 
-      updateDoc, 
-      query, 
-      where, 
-      orderBy 
+      updateDoc 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ==========================================
-    // ⚙️ INSIRA SUAS CREDENCIAIS DO FIREBASE AQUI
-    // ==========================================
+    // Credenciais fixas solicitadas
     const firebaseConfig = {
       apiKey: "AIzaSyAO3qqELF_jHslv-anqm61eAWNQweVS344",
       authDomain: "qg-do-papai.firebaseapp.com",
@@ -114,21 +109,15 @@
     let isFirebaseConfigured = false;
     const txtStatusConexao = document.getElementById("txt-status-conexao");
 
-    if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "SUA_API_KEY_AQUI") {
-      try {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        isFirebaseConfigured = true;
-        txtStatusConexao.innerText = "Firebase Conectado";
-        console.log("Firebase conectado na Cozinha!");
-      } catch (error) {
-        console.error("Erro Firebase: ", error);
-        txtStatusConexao.innerText = "Erro Conexão";
-        txtStatusConexao.parentNode.classList.replace("bg-green-500", "bg-red-500");
-      }
-    } else {
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      isFirebaseConfigured = true;
+      txtStatusConexao.innerText = "Firebase Conectado";
+      console.log("Firebase conectado na Cozinha!");
+    } catch (error) {
+      console.error("Erro Firebase: ", error);
       txtStatusConexao.innerText = "Simulação Local (Offline)";
-      console.warn("Cozinha rodando em modo Simulado Local. Abra o garcom.html no mesmo navegador para testar.");
     }
 
     // Seleção de Elementos
@@ -140,11 +129,35 @@
 
     let todosOsPedidos = [];
 
+    // Expor a função marcarComoPronto globalmente
+    window.marcarComoPronto = async function(pedidoId) {
+      tocarSomConclusao();
+
+      try {
+        if (isFirebaseConfigured) {
+          const docRef = doc(db, "pedidos_brincadeira", pedidoId);
+          await updateDoc(docRef, { status: "pronto" });
+        } else {
+          // Modo Simulado Local
+          const pedidosLocais = JSON.parse(localStorage.getItem('pedidos_locais') || '[]');
+          const idx = pedidosLocais.findIndex(p => p.id === pedidoId);
+          if (idx > -1) {
+            pedidosLocais[idx].status = "pronto";
+            localStorage.setItem('pedidos_locais', JSON.stringify(pedidosLocais));
+            window.dispatchEvent(new Event('storage'));
+          }
+        }
+        console.log(`Pedido ${pedidoId} marcado como pronto!`);
+      } catch (error) {
+        console.error("Erro ao finalizar pedido: ", error);
+        alert("Erro ao marcar pedido como pronto.");
+      }
+    };
+
     // ==========================================
     // 🎨 RENDERIZAÇÃO DOS TICKETS DE PEDIDO
     // ==========================================
     function renderizarFila() {
-      // Filtrar pendentes e prontos
       const pendentes = todosOsPedidos.filter(p => p.status === "pendente");
       const prontos = todosOsPedidos.filter(p => p.status === "pronto");
 
@@ -174,32 +187,49 @@
     function criarTicket(pedido, isPronto) {
       const card = document.createElement("div");
       
+      // Normalização para suportar pedidos legados (se houver) e o novo formato unificado com quantidades
+      let itensParaPreparar = [];
+      if (pedido.itens && Array.isArray(pedido.itens)) {
+        itensParaPreparar = pedido.itens;
+      } else {
+        // Fallback robusto se for pedido antigo
+        const pratos = (pedido.pratos || []).map(p => ({ ...p, quantidade: 1 }));
+        const bebidas = (pedido.bebidas || []).map(b => ({ ...b, quantidade: 1 }));
+        const sobremesas = (pedido.sobremesas || []).map(s => ({ ...s, quantidade: 1 }));
+        itensParaPreparar = [...pratos, ...bebidas, ...sobremesas];
+      }
+
+      const totalValue = pedido.valorTotal !== undefined ? pedido.valorTotal : 0;
+
       if (!isPronto) {
-        // Estilo Card Pendente
+        // Estilo Card Pendente (KDS Cozinha)
         card.className = "ticket-entry bg-slate-800 rounded-3xl p-5 border-2 border-slate-700 shadow-xl flex flex-col justify-between hover:border-amber-400 transition-all space-y-4";
         
-        let itensHTML = "";
-        
-        const renderGrupo = (itens, titulo, emoji) => {
-          if (!itens || itens.length === 0) return "";
-          return `
-            <div class="border-b border-slate-700/60 pb-2 mb-2 last:border-0 last:pb-0">
-              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${emoji} ${titulo}</span>
-              <ul class="mt-1 space-y-1">
-                ${itens.map(i => `<li class="text-base font-medium text-slate-100 flex items-center gap-2"><span>${i.emoji}</span> <span>${i.nome}</span></li>`).join('')}
-              </ul>
-            </div>
-          `;
-        };
+        let itensHTML = `
+          <div class="border-b border-slate-700/60 pb-2 mb-2">
+            <span class="text-xs font-bold text-green-400 uppercase tracking-wider">🔥 LISTA DE PREPARO</span>
+            <ul class="mt-2 space-y-2">
+        `;
 
-        itensHTML += renderGrupo(pedido.pratos, "Pratos", "🍔");
-        itensHTML += renderGrupo(pedido.bebidas, "Bebidas", "🥤");
-        itensHTML += renderGrupo(pedido.sobremesas, "Sobremesas", "🍮");
+        itensHTML += itensParaPreparar.map(i => `
+          <li class="text-base font-bold text-slate-100 flex items-center justify-between bg-slate-900/40 p-2 rounded-xl border border-slate-700/30">
+            <div class="flex items-center gap-2">
+              <span class="bg-green-500 text-white px-2.5 py-0.5 rounded-lg text-xs font-black">x${i.quantidade}</span>
+              <span class="text-xl">${i.emoji}</span>
+              <span class="text-slate-200 font-bold">${i.nome}</span>
+            </div>
+          </li>
+        `).join('');
+
+        itensHTML += `
+            </ul>
+          </div>
+        `;
 
         card.innerHTML = `
           <div>
             <div class="flex justify-between items-center bg-slate-700/50 p-3 rounded-2xl mb-4 border border-slate-600/40">
-              <span class="text-sm font-semibold text-slate-300">📌 Mesa</span>
+              <span class="text-sm font-semibold text-slate-300">📍 Mesa</span>
               <span class="text-2xl font-black bg-amber-500 text-white px-4 py-0.5 rounded-full shadow-inner">Mesa ${pedido.mesa}</span>
             </div>
             
@@ -207,23 +237,24 @@
               ${itensHTML}
             </div>
           </div>
+
+          <div class="flex justify-between items-center bg-slate-900/60 px-3 py-2 rounded-xl border border-slate-700">
+            <span class="text-xs font-bold text-slate-400">TOTAL RECEBIDO:</span>
+            <span class="text-md font-extrabold text-amber-400">R$ ${totalValue.toFixed(2)}</span>
+          </div>
           
           <button 
-            class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-base py-3.5 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 transform active:scale-95 transition-all mt-4 cursor-pointer btn-pronto"
-            data-id="${pedido.id}"
+            onclick="marcarComoPronto('${pedido.id}')"
+            class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-base py-3.5 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 transform active:scale-95 transition-all mt-4 cursor-pointer"
           >
-            <span>👨‍🍳</span> PEDIDO PRONTO!
+            <span>👨‍🍳</span> ENVIAR ALERTA PRONTO!
           </button>
         `;
-
-        // Event listener do botão pronto
-        card.querySelector(".btn-pronto").addEventListener("click", () => marcarComoPronto(pedido.id));
       } else {
         // Estilo Card Pronto (Histórico)
         card.className = "bg-slate-800/40 rounded-2xl p-4 border border-slate-700/50 flex flex-col justify-between";
         
-        const todosItens = [...(pedido.pratos || []), ...(pedido.bebidas || []), ...(pedido.sobremesas || [])];
-        const emojis = todosItens.map(i => i.emoji).join(' ');
+        const emojis = itensParaPreparar.map(i => i.emoji).join(' ');
 
         card.innerHTML = `
           <div class="flex justify-between items-center mb-2">
@@ -231,7 +262,10 @@
             <span class="text-xs font-semibold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-800/30">Pronto!</span>
           </div>
           <div class="text-xl mb-1 truncate">${emojis}</div>
-          <div class="text-[10px] text-slate-500 truncate">Mesa ${pedido.mesa} finalizada</div>
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] text-slate-500">Mesa ${pedido.mesa} finalizada</span>
+            <span class="text-xs font-bold text-slate-300">R$ ${totalValue.toFixed(2)}</span>
+          </div>
         `;
       }
 
@@ -239,58 +273,21 @@
     }
 
     // ==========================================
-    // ⚙️ MARCAR COMO PRONTO (MUTATION)
-    // ==========================================
-    async function marcarComoPronto(pedidoId) {
-      // Tocar som de frigideira ou clique
-      tocarSomConclusao();
-
-      try {
-        if (isFirebaseConfigured) {
-          // Atualiza status no Firestore
-          const docRef = doc(db, "pedidos_brincadeira", pedidoId);
-          await updateDoc(docRef, { status: "pronto" });
-        } else {
-          // Modo Simulado Local (localStorage)
-          const pedidosLocais = JSON.parse(localStorage.getItem('pedidos_locais') || '[]');
-          const idx = pedidosLocais.findIndex(p => p.id === pedidoId);
-          if (idx > -1) {
-            pedidosLocais[idx].status = "pronto";
-            localStorage.setItem('pedidos_locais', JSON.stringify(pedidosLocais));
-            
-            // Disparar evento para atualizar o Garçom imediatamente se estiver na mesma aba
-            window.dispatchEvent(new Event('storage'));
-          }
-        }
-        
-        console.log(`Pedido ${pedidoId} marcado como pronto!`);
-      } catch (error) {
-        console.error("Erro ao finalizar pedido: ", error);
-        alert("Erro ao marcar pedido como pronto.");
-      }
-    }
-
-    // ==========================================
     // 🔔 REAL-TIME EVENT LISTENING
     // ==========================================
     function iniciarEscutaRealTime() {
       if (isFirebaseConfigured) {
-        // Escuta Firebase
         onSnapshot(collection(db, "pedidos_brincadeira"), (snapshot) => {
           let lista = [];
           snapshot.forEach(doc => {
             lista.push({ id: doc.id, ...doc.data() });
           });
           
-          // Ordenar por data ou id (mais novos primeiro na fila de pendentes)
           todosOsPedidos = lista;
           renderizarFila();
-          
-          // Se entrou um novo pedido pendente, toca um sininho de aviso
           detectarNovosPedidos(lista);
         });
       } else {
-        // Escuta LocalStorage para simulação local
         const carregarLocal = () => {
           const pedidosLocais = JSON.parse(localStorage.getItem('pedidos_locais') || '[]');
           detectarNovosPedidos(pedidosLocais);
@@ -299,9 +296,8 @@
         };
 
         window.addEventListener("storage", carregarLocal);
-        carregarLocal(); // carga inicial
+        carregarLocal();
         
-        // Polling de 2s para garantir sincronia local
         setInterval(carregarLocal, 2000);
       }
     }
@@ -311,7 +307,6 @@
     function detectarNovosPedidos(listaAtual) {
       const pendentesAtuais = listaAtual.filter(p => p.status === "pendente").length;
       if (pendentesAtuais > quantidadeAnteriorPendentes) {
-        // Entrou um novo pedido! Toca o alerta sonoro de cozinha!
         tocarSomNovoPedido();
       }
       quantidadeAnteriorPendentes = pendentesAtuais;
@@ -323,7 +318,6 @@
     function tocarSomNovoPedido() {
       try {
         const context = new (window.AudioContext || window.webkitAudioContext)();
-        // Som de apito ou campainha de entrada
         const osc = context.createOscillator();
         const gain = context.createGain();
         osc.type = "triangle";
@@ -341,7 +335,6 @@
     function tocarSomConclusao() {
       try {
         const context = new (window.AudioContext || window.webkitAudioContext)();
-        // Som de frigideira selando "Sizzling" ou sucesso
         const bufferSize = context.sampleRate * 0.4;
         const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
         const data = buffer.getChannelData(0);
