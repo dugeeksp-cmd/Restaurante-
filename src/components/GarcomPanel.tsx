@@ -25,6 +25,32 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
   const [sentOrderIds, setSentOrderIds] = useState<string[]>([]);
   const [alertaMesa, setAlertaMesa] = useState<number | null>(null);
 
+  // Track the order IDs submitted in this session for the "Recent Orders" panel
+  const [sessaoOrderIds, setSessaoOrderIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('sessao_pedido_ids') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sessao_pedido_ids', JSON.stringify(sessaoOrderIds));
+  }, [sessaoOrderIds]);
+
+  const pedidosRecentes = sessaoOrderIds
+    .map(id => pedidos.find(p => p.id === id))
+    .filter((p): p is Pedido => !!p);
+
+  const getEmojis = (pedido: Pedido) => {
+    const list: string[] = [];
+    if (pedido.pratos) list.push(...pedido.pratos.map(p => `1x ${p.emoji}`));
+    if (pedido.bebidas) list.push(...pedido.bebidas.map(b => `1x ${b.emoji}`));
+    if (pedido.sobremesas) list.push(...pedido.sobremesas.map(s => `1x ${s.emoji}`));
+    if (pedido.itens) list.push(...pedido.itens.map(i => `${i.quantidade || 1}x ${i.emoji}`));
+    return list.join(' ');
+  };
+
   // Sound Synth for notification (bell sound)
   const tocarSininho = () => {
     try {
@@ -119,10 +145,12 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
       const latestPedido = pedidos.find(p => p.mesa === parseInt(mesa) && p.status === 'pendente');
       if (latestPedido) {
         setSentOrderIds(prev => [...prev, latestPedido.id]);
+        setSessaoOrderIds(prev => Array.from(new Set([latestPedido.id, ...prev])).slice(0, 5));
       } else {
         // Fallback: track all pending for this table
         const matching = pedidos.filter(p => p.mesa === parseInt(mesa) && p.status === 'pendente').map(p => p.id);
         setSentOrderIds(prev => Array.from(new Set([...prev, ...matching])));
+        setSessaoOrderIds(prev => Array.from(new Set([...matching, ...prev])).slice(0, 5));
       }
     }, 100);
 
@@ -298,6 +326,46 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
           >
             <Send size={16} /> Enviar Pedido
           </button>
+        </section>
+
+        {/* Camada 6: Pedidos Recentes da Sessão */}
+        <section className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <span>⏱️</span> Pedidos Recentes (Últimos 5)
+          </h3>
+          {pedidosRecentes.length === 0 ? (
+            <div className="text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <span className="text-2xl">🧐</span>
+              <p className="text-[10px] text-slate-400 font-bold mt-1">Nenhum pedido enviado nesta sessão ainda!</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {pedidosRecentes.map(p => {
+                const formatTime = new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const isPronto = p.status === 'pronto';
+                const statusBg = isPronto ? 'bg-green-100 text-green-800 border-green-200' : 'bg-amber-100 text-amber-800 border-amber-200 animate-pulse';
+                const statusLabel = isPronto ? '✅ PRONTO!' : '⏳ NA COZINHA';
+                return (
+                  <div key={p.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between shadow-xs hover:border-amber-300 transition-colors">
+                    <div className="flex-1 min-w-0 pr-2 text-left">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-black text-slate-700">Mesa {p.mesa}</span>
+                        <span className="text-[9px] font-bold text-slate-400">{formatTime}</span>
+                      </div>
+                      <p className="text-xs font-bold text-slate-500 truncate">
+                        {getEmojis(p)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className={`text-[10px] font-black ${statusBg} border px-2 py-0.5 rounded-full`}>
+                        {statusLabel}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
       </div>

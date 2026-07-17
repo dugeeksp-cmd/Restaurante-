@@ -16,13 +16,46 @@
     .accordion-content {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
       opacity: 0;
     }
     .accordion-content.expanded {
       max-height: 4000px; /* High enough to contain all items */
       opacity: 1;
     }
+    /* Smooth fade and slide up animation for children cards when parent is expanded */
+    .accordion-content.expanded > div {
+      animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    @keyframes slideUpFade {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Beautiful Lúdico Modal Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; backdrop-filter: blur(0px); }
+      to { opacity: 1; backdrop-filter: blur(4px); }
+    }
+    @keyframes popUp {
+      0% { transform: scale(0.9) translateY(30px); opacity: 0; }
+      70% { transform: scale(1.03) translateY(-4px); }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    .animate-pop-up {
+      animation: popUp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
     .bounce-short {
       animation: bounceShort 0.5s ease-out;
     }
@@ -188,11 +221,21 @@
       </button>
     </section>
 
+    <!-- CAMADA 5: Pedidos Recentes da Sessão -->
+    <section class="bg-white rounded-2xl p-5 shadow-md border-2 border-amber-200 space-y-4">
+      <h2 class="text-lg font-bold text-slate-700 border-b pb-2 flex items-center gap-2">
+        <span>⏱️</span> Pedidos Recentes (Últimos 5)
+      </h2>
+      <div id="container-pedidos-recentes" class="space-y-3">
+        <!-- Preenchido via JS -->
+      </div>
+    </section>
+
   </main>
 
   <!-- MODAL DE ALERTA DE PEDIDO PRONTO -->
-  <div id="modal-pronto" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center border-4 border-amber-400 shadow-2xl bounce-short">
+  <div id="modal-pronto" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden animate-fade-in">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center border-4 border-amber-400 shadow-2xl animate-pop-up">
       <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <span class="text-5xl animate-bounce">🔔</span>
       </div>
@@ -547,6 +590,7 @@
           const docRef = await addDoc(collection(db, "pedidos_brincadeira"), novoPedido);
           pedidosEnviados.add(docRef.id);
           salvarPedidosSessao();
+          registrarPedidoRecente(novoPedido, docRef.id);
         } else {
           // Modo Simulado Local fallback
           const pedidosLocais = JSON.parse(localStorage.getItem('pedidos_locais') || '[]');
@@ -557,6 +601,7 @@
           
           pedidosEnviados.add(idSimulado);
           salvarPedidosSessao();
+          registrarPedidoRecente(novoPedido, idSimulado);
           window.dispatchEvent(new Event('storage'));
         }
 
@@ -581,6 +626,7 @@
               
               if (pedido.status === "pronto" && pedidosEnviados.has(pedidoId)) {
                 mostrarAlertaPronto(pedido.mesa);
+                marcarPedidoRecenteComoPronto(pedidoId);
                 pedidosEnviados.delete(pedidoId);
                 salvarPedidosSessao();
               }
@@ -593,6 +639,7 @@
           pedidosLocais.forEach(pedido => {
             if (pedido.status === "pronto" && pedidosEnviados.has(pedido.id)) {
               mostrarAlertaPronto(pedido.mesa);
+              marcarPedidoRecenteComoPronto(pedido.id);
               pedidosEnviados.delete(pedido.id);
               salvarPedidosSessao();
             }
@@ -647,10 +694,104 @@
       } catch (e) {}
     }
 
+    // ==========================================
+    // ⏱️ GESTÃO DE PEDIDOS RECENTES (ÚLTIMOS 5)
+    // ==========================================
+    function registrarPedidoRecente(novoPedido, idDoPedido) {
+      let recentes = JSON.parse(localStorage.getItem('pedidos_recentes_sessao_garcom') || '[]');
+      const pedidoRecente = {
+        id: idDoPedido,
+        mesa: novoPedido.mesa,
+        itens: novoPedido.itens,
+        valorTotal: novoPedido.valorTotal,
+        status: novoPedido.status,
+        timestamp: new Date().toISOString()
+      };
+      recentes.unshift(pedidoRecente);
+      recentes = recentes.slice(0, 5);
+      localStorage.setItem('pedidos_recentes_sessao_garcom', JSON.stringify(recentes));
+      renderizarPedidosRecentes();
+    }
+
+    function marcarPedidoRecenteComoPronto(pedidoId) {
+      let recentes = JSON.parse(localStorage.getItem('pedidos_recentes_sessao_garcom') || '[]');
+      let mudou = false;
+      recentes = recentes.map(p => {
+        if (p.id === pedidoId) {
+          p.status = 'pronto';
+          mudou = true;
+        }
+        return p;
+      });
+      if (mudou) {
+        localStorage.setItem('pedidos_recentes_sessao_garcom', JSON.stringify(recentes));
+        renderizarPedidosRecentes();
+      }
+    }
+
+    function renderizarPedidosRecentes() {
+      const container = document.getElementById("container-pedidos-recentes");
+      if (!container) return;
+
+      let recentes = JSON.parse(localStorage.getItem('pedidos_recentes_sessao_garcom') || '[]');
+      
+      if (recentes.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-4 bg-slate-50 rounded-xl border-2 border-dashed border-amber-200/50">
+            <span class="text-2xl">🧐</span>
+            <p class="text-xs text-slate-400 font-bold mt-1">Nenhum pedido enviado nesta sessão ainda!</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = "";
+      recentes.forEach(p => {
+        let statusAtual = p.status;
+        if (!isFirebaseConfigured) {
+          // No modo local, vamos ler o status em tempo real de 'pedidos_locais' caso tenha mudado
+          const locais = JSON.parse(localStorage.getItem('pedidos_locais') || '[]');
+          const encontrou = locais.find(l => l.id === p.id);
+          if (encontrou) {
+            statusAtual = encontrou.status;
+          }
+        }
+
+        const formatTime = new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const isPronto = statusAtual === 'pronto';
+        const statusBg = isPronto ? 'bg-green-100 text-green-800 border-green-200' : 'bg-amber-100 text-amber-800 border-amber-200 animate-pulse';
+        const statusLabel = isPronto ? '✅ PRONTO!' : '⏳ NA COZINHA';
+
+        const emojis = p.itens.map(i => `${i.quantidade}x ${i.emoji}`).join(' ');
+
+        html += `
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between shadow-xs hover:border-amber-300 transition-colors">
+            <div class="flex-1 min-w-0 pr-2">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-black text-slate-700">Mesa ${p.mesa}</span>
+                <span class="text-[9px] font-bold text-slate-400">${formatTime}</span>
+              </div>
+              <p class="text-xs font-bold text-slate-600 truncate" title="${p.itens.map(i => `${i.quantidade}x ${i.nome}`).join(', ')}">
+                ${emojis}
+              </p>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <span class="text-[10px] font-black ${statusBg} border px-2 py-0.5 rounded-full text-center">
+                ${statusLabel}
+              </span>
+              <span class="text-xs font-black text-amber-600">R$ ${p.valorTotal.toFixed(2)}</span>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
     // Inicialização das Camadas
     renderizarCardapio();
     monitorarPedidosProntos();
     atualizarResumo();
+    renderizarPedidosRecentes();
 
   </script>
 </body>
