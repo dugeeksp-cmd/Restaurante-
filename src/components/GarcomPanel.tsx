@@ -136,25 +136,25 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
   };
 
   return (
-    <div id="garcom-root" class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg mx-auto relative overflow-hidden flex flex-col">
+    <div id="garcom-root" className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg mx-auto relative overflow-hidden flex flex-col">
       
       {/* Header do Painel */}
-      <div class="bg-orange-500 p-5 text-white flex justify-between items-center shadow-md">
-        <h2 class="text-sm font-extrabold flex items-center gap-2 tracking-tight uppercase">
+      <div className="bg-orange-500 p-5 text-white flex justify-between items-center shadow-md">
+        <h2 className="text-sm font-extrabold flex items-center gap-2 tracking-tight uppercase">
           <span>📝</span> MODO GARÇOM
         </h2>
-        <div class="bg-white/20 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider font-mono">
+        <div className="bg-white/20 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider font-mono">
           {mesa ? `MESA: ${mesa.padStart(2, '0')}` : 'MESA: --'}
         </div>
       </div>
 
-      <div class="p-5 space-y-6">
+      <div className="p-5 space-y-6">
         
         {/* Camada 1: Entrada da Mesa */}
-        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-          <div class="flex items-center space-x-3 mb-3">
-            <span class="text-2xl">📍</span>
-            <label htmlFor="mesa-input-react" class="text-xs font-bold text-slate-400 uppercase tracking-widest">Qual é o número da Mesa?</label>
+        <section className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <div className="flex items-center space-x-3 mb-3">
+            <span className="text-2xl">📍</span>
+            <label htmlFor="mesa-input-react" className="text-xs font-bold text-slate-400 uppercase tracking-widest">Qual é o número da Mesa?</label>
           </div>
           <input
             id="mesa-input-react"
@@ -164,16 +164,16 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
             onChange={(e) => setMesa(e.target.value)}
             min="1"
             max="99"
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold text-center focus:outline-none focus:border-orange-500 focus:bg-white transition-all text-slate-800"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold text-center focus:outline-none focus:border-orange-500 focus:bg-white transition-all text-slate-800"
           />
         </section>
 
         {/* Camada 2: Pratos */}
-        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-          <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+        <section className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span>🥘</span> Pratos Principais
           </h3>
-          <div class="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {pratos.map(item => {
               const selected = isSelected(item, 'pratos');
               return (
@@ -182,16 +182,16 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
                   key={item.id}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => toggleItem(item, 'pratos')}
-                  class={`flex items-center p-3 rounded-xl border transition-all cursor-pointer text-left ${
+                  className={`flex items-center p-3 rounded-xl border transition-all cursor-pointer text-left ${
                     selected 
                       ? 'border-2 border-orange-500 bg-orange-50 text-orange-700 shadow-sm shadow-orange-100 font-bold' 
                       : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:text-slate-700'
                   }`}
                 >
-                  <span class="text-3xl mr-3">{item.emoji}</span>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold leading-tight truncate uppercase">{item.nome}</p>
-                    {selected && <span class="text-[9px] text-orange-600 font-bold flex items-center gap-0.5 mt-0.5"><Check size={9} /> Ativo</span>}
+                  <span className="text-3xl mr-3">{item.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold leading-tight truncate uppercase">{item.nome}</p>
+                    {selected && <span className="text-[9px] text-orange-600 font-bold flex items-center gap-0.5 mt-0.5"><Check size={9} /> Ativo</span>}
                   </div>
                 </motion.button>
               );
@@ -200,11 +200,11 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
         </section>
 
         {/* Camada 3: Bebidas */}
-        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-          <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+        <section className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span>🥤</span> Bebidas Geladas
           </h3>
-          <div class="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {bebidas.map(item => {
               const selected = isSelected(item, 'bebidas');
               return (
@@ -213,16 +213,16 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
                   key={item.id}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => toggleItem(item, 'bebidas')}
-                  class={`flex items-center p-3 rounded-xl border transition-all cursor-pointer text-left ${
+                  className={`flex items-center p-3 rounded-xl border transition-all cursor-pointer text-left ${
                     selected 
                       ? 'border-2 border-orange-500 bg-orange-50 text-orange-700 shadow-sm shadow-orange-100 font-bold' 
                       : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:text-slate-700'
                   }`}
                 >
-                  <span class="text-3xl mr-3">{item.emoji}</span>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold leading-tight truncate uppercase">{item.nome}</p>
-                    {selected && <span class="text-[9px] text-orange-600 font-bold flex items-center gap-0.5 mt-0.5"><Check size={9} /> Ativo</span>}
+                  <span className="text-3xl mr-3">{item.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold leading-tight truncate uppercase">{item.nome}</p>
+                    {selected && <span className="text-[9px] text-orange-600 font-bold flex items-center gap-0.5 mt-0.5"><Check size={9} /> Ativo</span>}
                   </div>
                 </motion.button>
               );
@@ -231,11 +231,11 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
         </section>
 
         {/* Camada 4: Sobremesas */}
-        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-          <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+        <section className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span>🍮</span> Sobremesas Doces
           </h3>
-          <div class="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {sobremesas.map(item => {
               const selected = isSelected(item, 'sobremesas');
               return (
@@ -244,16 +244,16 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
                   key={item.id}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => toggleItem(item, 'sobremesas')}
-                  class={`flex items-center p-3 rounded-xl border transition-all cursor-pointer text-left ${
+                  className={`flex items-center p-3 rounded-xl border transition-all cursor-pointer text-left ${
                     selected 
                       ? 'border-2 border-orange-500 bg-orange-50 text-orange-700 shadow-sm shadow-orange-100 font-bold' 
                       : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:text-slate-700'
                   }`}
                 >
-                  <span class="text-3xl mr-3">{item.emoji}</span>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold leading-tight truncate uppercase">{item.nome}</p>
-                    {selected && <span class="text-[9px] text-orange-600 font-bold flex items-center gap-0.5 mt-0.5"><Check size={9} /> Ativo</span>}
+                  <span className="text-3xl mr-3">{item.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold leading-tight truncate uppercase">{item.nome}</p>
+                    {selected && <span className="text-[9px] text-orange-600 font-bold flex items-center gap-0.5 mt-0.5"><Check size={9} /> Ativo</span>}
                   </div>
                 </motion.button>
               );
@@ -262,25 +262,25 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
         </section>
 
         {/* Camada 5: Resumo e Envio */}
-        <section class="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-4">
-          <div class="bg-white rounded-xl border border-orange-100 p-3">
-            <p class="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wider">Resumo do Pedido</p>
+        <section className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-4">
+          <div className="bg-white rounded-xl border border-orange-100 p-3">
+            <p className="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wider">Resumo do Pedido</p>
             
-            <div class="text-sm font-bold text-slate-700">
+            <div className="text-sm font-bold text-slate-700">
               {mesa ? (
-                <div class="text-xs text-orange-700 font-black mb-2 flex items-center gap-1">
-                  <span>📍</span> Mesa Selecionada: <span class="underline">Mesa {mesa}</span>
+                <div className="text-xs text-orange-700 font-black mb-2 flex items-center gap-1">
+                  <span>📍</span> Mesa Selecionada: <span className="underline">Mesa {mesa}</span>
                 </div>
               ) : (
-                <div class="text-rose-500 text-xs font-bold flex items-center gap-1.5 mb-2">
+                <div className="text-rose-500 text-xs font-bold flex items-center gap-1.5 mb-2">
                   <AlertTriangle size={13} /> Informe o número da mesa!
                 </div>
               )}
 
               {selecao.pratos.length === 0 && selecao.bebidas.length === 0 && selecao.sobremesas.length === 0 ? (
-                <p class="text-slate-400 font-medium py-1 text-xs italic">Nenhum item selecionado ainda...</p>
+                <p className="text-slate-400 font-medium py-1 text-xs italic">Nenhum item selecionado ainda...</p>
               ) : (
-                <p class="text-slate-700 text-xs leading-relaxed">
+                <p className="text-slate-700 text-xs leading-relaxed">
                   {[
                     ...selecao.pratos.map(p => `1x ${p.emoji} ${p.nome}`),
                     ...selecao.bebidas.map(b => `1x ${b.emoji} ${b.nome}`),
@@ -294,7 +294,7 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
           <button
             id="btn-enviar-pedido"
             onClick={handleEnviar}
-            class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-orange-200 flex items-center justify-center gap-2 uppercase tracking-tighter text-md cursor-pointer transform active:scale-98 transition-all"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-orange-200 flex items-center justify-center gap-2 uppercase tracking-tighter text-md cursor-pointer transform active:scale-98 transition-all"
           >
             <Send size={16} /> Enviar Pedido
           </button>
@@ -310,25 +310,25 @@ export default function GarcomPanel({ pedidos, onEnviarPedido }: GarcomPanelProp
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           >
             <motion.div 
               initial={{ scale: 0.85, y: 50 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.85, y: 50 }}
-              class="bg-white rounded-3xl p-6 max-w-sm w-full text-center border-t-8 border-orange-500 shadow-2xl relative ring-4 ring-orange-500/10"
+              className="bg-white rounded-3xl p-6 max-w-sm w-full text-center border-t-8 border-orange-500 shadow-2xl relative ring-4 ring-orange-500/10"
             >
-              <div class="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                <span class="text-4xl">🔔</span>
+              <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                <span className="text-4xl">🔔</span>
               </div>
-              <h3 class="text-xl font-black text-orange-600 uppercase tracking-tight">Atenção Garçom!</h3>
-              <p class="text-slate-600 font-bold text-sm mt-2 mb-6">
-                O pedido da <span class="text-orange-600 font-black">Mesa {alertaMesa}</span> já está pronto na cozinha!
+              <h3 className="text-xl font-black text-orange-600 uppercase tracking-tight">Atenção Garçom!</h3>
+              <p className="text-slate-600 font-bold text-sm mt-2 mb-6">
+                O pedido da <span className="text-orange-600 font-black">Mesa {alertaMesa}</span> já está pronto na cozinha!
               </p>
               <button
                 id="btn-fechar-alerta"
                 onClick={() => setAlertaMesa(null)}
-                class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-3.5 px-6 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer text-xs uppercase tracking-wider"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-3.5 px-6 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer text-xs uppercase tracking-wider"
               >
                 Entendido / Retirar
               </button>
