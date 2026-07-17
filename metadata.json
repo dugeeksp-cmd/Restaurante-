@@ -1,0 +1,6 @@
+{
+  "name": "Brincadeira de Restaurante",
+  "description": "Um jogo de brincar de restaurante em tempo real para crianças, dividido em painel do Garçom e painel da Cozinha.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

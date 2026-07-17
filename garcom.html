@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Garçom - Brincadeira de Restaurante</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Fredoka (Playful & Rounded) -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Fredoka', sans-serif;
+    }
+    .selected-card {
+      transform: scale(0.96);
+      border-color: #f59e0b; /* Amber 500 */
+      background-color: #fef3c7; /* Amber 100 */
+    }
+  </style>
+</head>
+<body class="bg-amber-50 min-h-screen pb-12 text-slate-800">
+
+  <!-- Header Lúdico -->
+  <header class="bg-gradient-to-r from-amber-400 to-orange-500 text-white py-6 px-4 shadow-lg rounded-b-[2rem] text-center mb-6">
+    <div class="max-w-md mx-auto">
+      <span class="text-4xl">📱</span>
+      <h1 class="text-3xl font-bold mt-1 tracking-wide">Painel do Garçom</h1>
+      <p class="text-amber-100 text-sm font-medium mt-1">Anote os pedidos das mesas com carinho! ✨</p>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 space-y-6">
+
+    <!-- CAMADA 1: Número da Mesa -->
+    <section id="secao-mesa" class="bg-white rounded-2xl p-5 shadow-md border-2 border-amber-200">
+      <div class="flex items-center space-x-3 mb-3">
+        <span class="text-2xl">📍</span>
+        <label for="input-mesa" class="text-lg font-bold text-slate-700">Qual é o número da Mesa?</label>
+      </div>
+      <div class="flex space-x-2">
+        <input 
+          type="number" 
+          id="input-mesa" 
+          placeholder="Ex: 5" 
+          min="1" 
+          max="99"
+          class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-xl font-bold text-center focus:outline-none focus:border-amber-400 transition-colors"
+        >
+      </div>
+    </section>
+
+    <!-- CAMADA 2: Pratos -->
+    <section class="bg-white rounded-2xl p-5 shadow-md border-2 border-amber-200">
+      <h2 class="text-xl font-bold text-slate-700 mb-3 flex items-center gap-2">
+        <span>🍔</span> Escolha os Pratos
+      </h2>
+      <div class="grid grid-cols-2 gap-3" id="grid-pratos">
+        <!-- Cards de pratos serão inseridos via JS -->
+      </div>
+    </section>
+
+    <!-- CAMADA 3: Bebidas -->
+    <section class="bg-white rounded-2xl p-5 shadow-md border-2 border-amber-200">
+      <h2 class="text-xl font-bold text-slate-700 mb-3 flex items-center gap-2">
+        <span>🥤</span> Escolha as Bebidas
+      </h2>
+      <div class="grid grid-cols-2 gap-3" id="grid-bebidas">
+        <!-- Cards de bebidas serão inseridos via JS -->
+      </div>
+    </section>
+
+    <!-- CAMADA 4: Sobremesas -->
+    <section class="bg-white rounded-2xl p-5 shadow-md border-2 border-amber-200">
+      <h2 class="text-xl font-bold text-slate-700 mb-3 flex items-center gap-2">
+        <span>🍮</span> Escolha as Sobremesas
+      </h2>
+      <div class="grid grid-cols-2 gap-3" id="grid-sobremesas">
+        <!-- Cards de sobremesas serão inseridos via JS -->
+      </div>
+    </section>
+
+    <!-- CAMADA 5: Resumo e Envio -->
+    <section class="bg-white rounded-2xl p-5 shadow-md border-2 border-amber-200 space-y-4">
+      <h2 class="text-xl font-bold text-slate-700 border-b pb-2 flex items-center gap-2">
+        <span>📝</span> Resumo do Pedido
+      </h2>
+      
+      <div id="resumo-conteudo" class="text-sm space-y-2 text-slate-600 font-medium">
+        <!-- Gerado via JS -->
+        <p class="text-slate-400 text-center py-2">Nenhum item selecionado ainda...</p>
+      </div>
+
+      <button 
+        id="btn-enviar" 
+        class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-lg py-4 px-6 rounded-xl shadow-md transform active:scale-95 transition-all flex items-center justify-center gap-2"
+      >
+        <span>🚀</span> ENVIAR PEDIDO PARA A COZINHA
+      </button>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE ALERTA DE PEDIDO PRONTO (O Grande Diferencial) -->
+  <div id="modal-pronto" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center border-4 border-amber-400 shadow-2xl animate-bounce-short">
+      <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+        <span class="text-5xl">🔔</span>
+      </div>
+      <h3 class="text-2xl font-bold text-amber-600 mb-2">PEDIDO PRONTO!</h3>
+      <p id="modal-texto" class="text-slate-700 font-medium text-lg mb-6">
+        Atenção Garçom!<br>O pedido da <strong class="text-slate-900 text-xl">Mesa X</strong> está pronto na cozinha!
+      </p>
+      <button 
+        id="btn-fechar-modal"
+        class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all active:scale-95"
+      >
+        Pegar Pedido! 🏃💨
+      </button>
+    </div>
+  </div>
+
+  <!-- Firebase v9+ Modular CDN Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      onSnapshot, 
+      query, 
+      where, 
+      orderBy,
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // ==========================================
+    // ⚙️ INSIRA SUAS CREDENCIAIS DO FIREBASE AQUI
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY_AQUI",
+      authDomain: "SEU_AUTH_DOMAIN_AQUI",
+      projectId: "SEU_PROJECT_ID_AQUI",
+      storageBucket: "SEU_STORAGE_BUCKET_AQUI",
+      messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
+      appId: "SEU_APP_ID_AQUI"
+    };
+
+    // Inicializa o Firebase (Tenta inicializar com a config do placeholder se as chaves forem preenchidas)
+    let db;
+    let isFirebaseConfigured = false;
+
+    // Função para verificar se as credenciais do usuário foram preenchidas
+    if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "SUA_API_KEY_AQUI") {
+      try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        isFirebaseConfigured = true;
+        console.log("Firebase conectado com sucesso!");
+      } catch (error) {
+        console.error("Erro ao inicializar Firebase: ", error);
+      }
+    } else {
+      console.warn("Firebase não está configurado. O aplicativo funcionará em Modo Simulação Local (Offline). Para testar em tempo real entre celulares, cole suas credenciais do Firebase no topo do script.");
+    }
+
+    // ==========================================
+    // 🍕 DEFINIÇÃO DO CARDÁPIO
+    // ==========================================
+    const pratos = [
+      { id: "hamburguer", nome: "Hambúrguer", emoji: "🍔" },
+      { id: "pizza", nome: "Pizza", emoji: "🍕" },
+      { id: "macarrao", nome: "Macarrão", emoji: "🍝" },
+      { id: "sushi", nome: "Sushi", emoji: "🍣" },
+      { id: "batata_recheada", nome: "Batata Recheada", emoji: "🥔" },
+      { id: "salada", nome: "Salada", emoji: "🥗" }
+    ];
+
+    const bebidas = [
+      { id: "suco_laranja", nome: "Suco Laranja", emoji: "🍊" },
+      { id: "suco_uva", nome: "Suco Uva", emoji: "🍇" },
+      { id: "refri_cola", nome: "Refri Cola", emoji: "🥤" },
+      { id: "refri_limao", nome: "Refri Limão", emoji: "🍋" }
+    ];
+
+    const sobremesas = [
+      { id: "pudim", nome: "Pudim", emoji: "🍮" },
+      { id: "sorvete", nome: "Sorvete", emoji: "🍦" },
+      { id: "bolo", nome: "Bolo", emoji: "🍰" },
+      { id: "salada_frutas", nome: "Salada de Frutas", emoji: "🍓" }
+    ];
+
+    // ==========================================
+    // 🧠 ESTADO DO PEDIDO ATUAL (LOCAL)
+    // ==========================================
+    const selecao = {
+      mesa: "",
+      pratos: [],
+      bebidas: [],
+      sobremesas: []
+    };
+
+    // Histórico de pedidos enviados nesta sessão do Garçom para alertar o status pronto
+    const pedidosEnviados = new Set(JSON.parse(localStorage.getItem('pedidos_enviados_garcom') || '[]'));
+
+    function salvarPedidosSessao() {
+      localStorage.setItem('pedidos_enviados_garcom', JSON.stringify(Array.from(pedidosEnviados)));
+    }
+
+    // ==========================================
+    // 🖥️ SELEÇÃO DE ELEMENTOS DO DOM
+    // ==========================================
+    const inputMesa = document.getElementById("input-mesa");
+    const gridPratos = document.getElementById("grid-pratos");
+    const gridBebidas = document.getElementById("grid-bebidas");
+    const gridSobremesas = document.getElementById("grid-sobremesas");
+    const resumoConteudo = document.getElementById("resumo-conteudo");
+    const btnEnviar = document.getElementById("btn-enviar");
+    
+    const modalPronto = document.getElementById("modal-pronto");
+    const modalTexto = document.getElementById("modal-texto");
+    const btnFecharModal = document.getElementById("btn-fechar-modal");
+
+    // ==========================================
+    // 🎨 RENDERIZAR OS CARDS DO CARDÁPIO
+    // ==========================================
+    function criarCard(item, categoria) {
+      const card = document.createElement("button");
+      card.className = "flex flex-col items-center justify-center p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl hover:border-amber-300 hover:bg-amber-50/50 transition-all active:scale-95 text-center focus:outline-none";
+      card.dataset.id = item.id;
+      card.dataset.nome = item.nome;
+      card.dataset.emoji = item.emoji;
+      
+      card.innerHTML = `
+        <span class="text-4xl mb-1">${item.emoji}</span>
+        <span class="text-sm font-semibold text-slate-700">${item.nome}</span>
+      `;
+
+      card.addEventListener("click", () => alternarSelecao(card, categoria, item));
+      return card;
+    }
+
+    function renderizarCardapio() {
+      pratos.forEach(item => gridPratos.appendChild(criarCard(item, 'pratos')));
+      bebidas.forEach(item => gridBebidas.appendChild(criarCard(item, 'bebidas')));
+      sobremesas.forEach(item => gridSobremesas.appendChild(criarCard(item, 'sobremesas')));
+    }
+
+    // Alternar seleção de itens
+    function alternarSelecao(cardElement, categoria, item) {
+      const index = selecao[categoria].findIndex(i => i.id === item.id);
+      
+      if (index > -1) {
+        // Deselecionar
+        selecao[categoria].splice(index, 1);
+        cardElement.classList.remove("selected-card");
+      } else {
+        // Selecionar
+        selecao[categoria].push(item);
+        cardElement.classList.add("selected-card");
+      }
+      
+      atualizarResumo();
+    }
+
+    // Monitorar input da mesa
+    inputMesa.addEventListener("input", (e) => {
+      selecao.mesa = e.target.value;
+      atualizarResumo();
+    });
+
+    // Atualizar HTML do resumo do pedido
+    function atualizarResumo() {
+      if (!selecao.mesa && selecao.pratos.length === 0 && selecao.bebidas.length === 0 && selecao.sobremesas.length === 0) {
+        resumoConteudo.innerHTML = `<p class="text-slate-400 text-center py-2">Nenhum item selecionado ainda...</p>`;
+        return;
+      }
+
+      let html = "";
+      
+      if (selecao.mesa) {
+        html += `
+          <div class="bg-amber-100/50 text-amber-800 px-3 py-2 rounded-lg font-bold text-base mb-3 flex items-center justify-between">
+            <span>📍 Mesa Selecionada:</span>
+            <span class="text-lg bg-amber-500 text-white px-3 py-0.5 rounded-full">Mesa ${selecao.mesa}</span>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="bg-rose-50 text-rose-600 px-3 py-2 rounded-lg font-bold text-xs mb-3">
+            ⚠️ Por favor, digite o número da mesa!
+          </div>
+        `;
+      }
+
+      // Renderizar itens
+      const renderItensResumo = (itens, label, emoji) => {
+        if (itens.length === 0) return "";
+        return `
+          <div class="mb-2">
+            <span class="text-slate-500 text-xs uppercase tracking-wider">${label}:</span>
+            <div class="flex flex-wrap gap-1.5 mt-1">
+              ${itens.map(i => `<span class="bg-slate-100 text-slate-800 px-2.5 py-1 rounded-full text-xs font-semibold">${i.emoji} ${i.nome}</span>`).join('')}
+            </div>
+          </div>
+        `;
+      };
+
+      html += renderItensResumo(selecao.pratos, "Pratos", "🍔");
+      html += renderItensResumo(selecao.bebidas, "Bebidas", "🥤");
+      html += renderItensResumo(selecao.sobremesas, "Sobremesas", "🍮");
+
+      resumoConteudo.innerHTML = html;
+    }
+
+    // Limpar seleções após o envio
+    function limparFormulario() {
+      selecao.mesa = "";
+      selecao.pratos = [];
+      selecao.bebidas = [];
+      selecao.sobremesas = [];
+      
+      inputMesa.value = "";
+      
+      // Remover estilo de selecionado de todos os cards
+      document.querySelectorAll(".selected-card").forEach(el => {
+        el.classList.remove("selected-card");
+      });
+
+      atualizarResumo();
+    }
+
+    // ==========================================
+    // 🚀 ENVIAR PEDIDO PARA O FIRESTORE
+    // ==========================================
+    btnEnviar.addEventListener("click", async () => {
+      if (!selecao.mesa) {
+        alert("Ops! Por favor, digite o número da mesa antes de enviar o pedido.");
+        inputMesa.focus();
+        return;
+      }
+
+      if (selecao.pratos.length === 0 && selecao.bebidas.length === 0 && selecao.sobremesas.length === 0) {
+        alert("Hum... escolha pelo menos um prato, bebida ou sobremesa para enviar!");
+        return;
+      }
+
+      // Construir objeto do pedido
+      const novoPedido = {
+        mesa: parseInt(selecao.mesa),
+        pratos: selecao.pratos.map(p => ({ id: p.id, nome: p.nome, emoji: p.emoji })),
+        bebidas: selecao.bebidas.map(b => ({ id: b.id, nome: b.nome, emoji: b.emoji })),
+        sobremesas: selecao.sobremesas.map(s => ({ id: s.id, nome: s.nome, emoji: s.emoji })),
+        status: "pendente",
+        timestamp: isFirebaseConfigured ? serverTimestamp() : new Date().toISOString()
+      };
+
+      try {
+        if (isFirebaseConfigured) {
+          // Salva no Firestore
+          const docRef = await addDoc(collection(db, "pedidos_brincadeira"), novoPedido);
+          pedidosEnviados.add(docRef.id);
+          salvarPedidosSessao();
+        } else {
+          // Modo Simulado Local (Usa localStorage para sincronizar com a cozinha no mesmo navegador)
+          const pedidosLocais = JSON.parse(localStorage.getItem('pedidos_locais') || '[]');
+          const idSimulado = "sim_" + Math.random().toString(36).substring(2, 9);
+          const pedidoSimulado = { id: idSimulado, ...novoPedido };
+          pedidosLocais.push(pedidoSimulado);
+          localStorage.setItem('pedidos_locais', JSON.stringify(pedidosLocais));
+          
+          pedidosEnviados.add(idSimulado);
+          salvarPedidosSessao();
+
+          // Disparar evento para atualizar a cozinha imediatamente caso esteja aberta na mesma aba/tela
+          window.dispatchEvent(new Event('storage'));
+        }
+
+        alert("🚀 Pedido enviado com sucesso para a cozinha! Bom apetite!");
+        limparFormulario();
+      } catch (error) {
+        console.error("Erro ao enviar o pedido: ", error);
+        alert("Ops, não consegui enviar para o Firebase. Verifique a configuração.");
+      }
+    });
+
+    // ==========================================
+    // 🔔 ESCUTAR ALTERAÇÕES (REAL-TIME SNAPSHOT)
+    // ==========================================
+    function monitorarPedidosProntos() {
+      if (isFirebaseConfigured) {
+        // Escuta real-time no Firestore
+        onSnapshot(collection(db, "pedidos_brincadeira"), (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "modified") {
+              const pedido = change.doc.data();
+              const pedidoId = change.doc.id;
+              
+              // Se o status mudou para "pronto" e foi um pedido enviado por este Garçom
+              if (pedido.status === "pronto" && pedidosEnviados.has(pedidoId)) {
+                mostrarAlertaPronto(pedido.mesa);
+                // Remove da lista para não alertar novamente
+                pedidosEnviados.delete(pedidoId);
+                salvarPedidosSessao();
+              }
+            }
+          });
+        });
+      } else {
+        // Monitoramento no Modo Simulado Local (escuta o localStorage)
+        window.addEventListener("storage", () => {
+          const pedidosLocais = JSON.parse(localStorage.getItem('pedidos_locais') || '[]');
+          pedidosLocais.forEach(pedido => {
+            if (pedido.status === "pronto" && pedidosEnviados.has(pedido.id)) {
+              mostrarAlertaPronto(pedido.mesa);
+              pedidosEnviados.delete(pedido.id);
+              salvarPedidosSessao();
+              
+              // Atualiza o local storage removendo o pedido se já estiver completo
+              // (ou mantém para histórico)
+            }
+          });
+        });
+        
+        // Verifica a cada 2 segundos no modo simulado para garantir
+        setInterval(() => {
+          window.dispatchEvent(new Event('storage'));
+        }, 2000);
+      }
+    }
+
+    // Exibir o modal de alerta chamativo
+    function mostrarAlertaPronto(numeroMesa) {
+      modalTexto.innerHTML = `
+        Atenção Garçom!<br>
+        O pedido da <span class="text-green-600 font-extrabold text-2xl">Mesa ${numeroMesa}</span> está pronto! 🍔🍕🍦
+      `;
+      modalPronto.classList.remove("hidden");
+      
+      // Feedback sonoro lúdico usando AudioContext (synth)
+      tocarSomNotificacao();
+    }
+
+    // Fechar modal
+    btnFecharModal.addEventListener("click", () => {
+      modalPronto.classList.add("hidden");
+    });
+
+    // Função de som lúdico (sininho) sem depender de arquivos de áudio externos
+    function tocarSomNotificacao() {
+      try {
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Primeira nota
+        const osc1 = context.createOscillator();
+        const gain1 = context.createGain();
+        osc1.type = "sine";
+        osc1.frequency.setValueAtTime(880, context.currentTime); // Nota A5
+        gain1.gain.setValueAtTime(0.3, context.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.8);
+        osc1.connect(gain1);
+        gain1.connect(context.destination);
+        osc1.start();
+        osc1.stop(context.currentTime + 0.8);
+        
+        // Segunda nota com leve atraso
+        setTimeout(() => {
+          const osc2 = context.createOscillator();
+          const gain2 = context.createGain();
+          osc2.type = "sine";
+          osc2.frequency.setValueAtTime(1320, context.currentTime); // Nota E6
+          gain2.gain.setValueAtTime(0.3, context.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 1.2);
+          osc2.connect(gain2);
+          gain2.connect(context.destination);
+          osc2.start();
+          osc2.stop(context.currentTime + 1.2);
+        }, 150);
+
+      } catch (e) {
+        console.log("Áudio indisponível ou aguardando interação do usuário.");
+      }
+    }
+
+    // Inicialização
+    renderizarCardapio();
+    monitorarPedidosProntos();
+    atualizarResumo();
+
+  </script>
+</body>
+</html>

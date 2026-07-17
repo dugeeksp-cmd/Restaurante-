@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cozinha - Brincadeira de Restaurante</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Fredoka (Rounded & Soft) -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Fredoka', sans-serif;
+    }
+    .ticket-entry {
+      animation: popIn 0.3s ease-out;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 min-h-screen pb-12 text-slate-100">
+
+  <!-- Header Estilo KDS Profissional -->
+  <header class="bg-slate-800 border-b border-slate-700 py-5 px-6 shadow-md mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div class="text-center sm:text-left">
+      <div class="flex items-center justify-center sm:justify-start gap-2">
+        <span class="text-3xl">👨‍🍳</span>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-wide text-green-400">Painel da Cozinha (KDS)</h1>
+      </div>
+      <p class="text-slate-400 text-sm mt-0.5 font-medium">Prepare as refeições e envie para o Garçom! 🍳🔥</p>
+    </div>
+    <div class="flex items-center gap-2 bg-slate-700/60 px-4 py-2 rounded-full border border-slate-600">
+      <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+      <span id="txt-status-conexao" class="text-xs font-bold text-slate-300">Tempo Real Ativo</span>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4">
+
+    <!-- Seção de Alerta de Fila de Pedidos -->
+    <div class="mb-6 flex justify-between items-center border-b border-slate-800 pb-3">
+      <h2 class="text-xl font-bold text-slate-300 flex items-center gap-2">
+        📥 Pedidos para Preparar <span id="contador-pedidos" class="bg-red-500 text-white text-xs px-2.5 py-0.5 rounded-full">0</span>
+      </h2>
+      <button 
+        id="btn-limpar-historico" 
+        class="text-xs text-slate-400 hover:text-rose-400 font-medium transition-colors border border-slate-700 hover:border-rose-500/30 px-3 py-1.5 rounded-lg bg-slate-800/40"
+      >
+        Limpar Histórico Local
+      </button>
+    </div>
+
+    <!-- Container Grid dos Pedidos Pendentes -->
+    <div 
+      id="container-tickets" 
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+    >
+      <!-- Estado de Fila Vazia -->
+      <div id="ticket-vazio" class="col-span-full flex flex-col items-center justify-center py-16 text-slate-500 bg-slate-800/20 rounded-3xl border-2 border-dashed border-slate-800">
+        <span class="text-6xl mb-3">💤</span>
+        <p class="text-lg font-bold text-slate-400">Nenhum pedido na fila ainda!</p>
+        <p class="text-sm text-slate-500">O garçom precisa enviar algum pedido para começar.</p>
+      </div>
+    </div>
+
+    <!-- Histórico de Pedidos Entregues -->
+    <section class="mt-12 border-t border-slate-800 pt-8">
+      <h2 class="text-lg font-bold text-slate-400 mb-4 flex items-center gap-2">
+        <span>✅</span> Histórico Recente (Prontos)
+      </h2>
+      <div 
+        id="container-historico" 
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 opacity-75"
+      >
+        <!-- Pedidos prontos entram aqui -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Firebase v9+ Modular CDN Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      onSnapshot, 
+      doc, 
+      updateDoc, 
+      query, 
+      where, 
+      orderBy 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // ==========================================
+    // ⚙️ INSIRA SUAS CREDENCIAIS DO FIREBASE AQUI
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY_AQUI",
+      authDomain: "SEU_AUTH_DOMAIN_AQUI",
+      projectId: "SEU_PROJECT_ID_AQUI",
+      storageBucket: "SEU_STORAGE_BUCKET_AQUI",
+      messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
+      appId: "SEU_APP_ID_AQUI"
+    };
+
+    // Inicializa o Firebase
+    let db;
+    let isFirebaseConfigured = false;
+    const txtStatusConexao = document.getElementById("txt-status-conexao");
+
+    if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "SUA_API_KEY_AQUI") {
+      try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        isFirebaseConfigured = true;
+        txtStatusConexao.innerText = "Firebase Conectado";
+        console.log("Firebase conectado na Cozinha!");
+      } catch (error) {
+        console.error("Erro Firebase: ", error);
+        txtStatusConexao.innerText = "Erro Conexão";
+        txtStatusConexao.parentNode.classList.replace("bg-green-500", "bg-red-500");
+      }
+    } else {
+      txtStatusConexao.innerText = "Simulação Local (Offline)";
+      console.warn("Cozinha rodando em modo Simulado Local. Abra o garcom.html no mesmo navegador para testar.");
+    }
+
+    // Seleção de Elementos
+    const containerTickets = document.getElementById("container-tickets");
+    const containerHistorico = document.getElementById("container-historico");
+    const ticketVazio = document.getElementById("ticket-vazio");
+    const contadorPedidos = document.getElementById("contador-pedidos");
+    const btnLimparHistorico = document.getElementById("btn-limpar-historico");
+
+    let todosOsPedidos = [];
+
+    // ==========================================
+    // 🎨 RENDERIZAÇÃO DOS TICKETS DE PEDIDO
+    // ==========================================
+    function renderizarFila() {
+      // Filtrar pendentes e prontos
+      const pendentes = todosOsPedidos.filter(p => p.status === "pendente");
+      const prontos = todosOsPedidos.filter(p => p.status === "pronto");
+
+      // Atualizar contador de pendentes
+      contadorPedidos.innerText = pendentes.length;
+
+      // Limpar containers
+      containerTickets.innerHTML = "";
+      containerHistorico.innerHTML = "";
+
+      // Renderizar Pendentes
+      if (pendentes.length === 0) {
+        containerTickets.appendChild(ticketVazio);
+      } else {
+        pendentes.forEach(pedido => {
+          containerTickets.appendChild(criarTicket(pedido, false));
+        });
+      }
+
+      // Renderizar Prontos
+      prontos.forEach(pedido => {
+        containerHistorico.appendChild(criarTicket(pedido, true));
+      });
+    }
+
+    // Criar o card do ticket para preparar ou pronto
+    function criarTicket(pedido, isPronto) {
+      const card = document.createElement("div");
+      
+      if (!isPronto) {
+        // Estilo Card Pendente
+        card.className = "ticket-entry bg-slate-800 rounded-3xl p-5 border-2 border-slate-700 shadow-xl flex flex-col justify-between hover:border-amber-400 transition-all space-y-4";
+        
+        let itensHTML = "";
+        
+        const renderGrupo = (itens, titulo, emoji) => {
+          if (!itens || itens.length === 0) return "";
+          return `
+            <div class="border-b border-slate-700/60 pb-2 mb-2 last:border-0 last:pb-0">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${emoji} ${titulo}</span>
+              <ul class="mt-1 space-y-1">
+                ${itens.map(i => `<li class="text-base font-medium text-slate-100 flex items-center gap-2"><span>${i.emoji}</span> <span>${i.nome}</span></li>`).join('')}
+              </ul>
+            </div>
+          `;
+        };
+
+        itensHTML += renderGrupo(pedido.pratos, "Pratos", "🍔");
+        itensHTML += renderGrupo(pedido.bebidas, "Bebidas", "🥤");
+        itensHTML += renderGrupo(pedido.sobremesas, "Sobremesas", "🍮");
+
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-center bg-slate-700/50 p-3 rounded-2xl mb-4 border border-slate-600/40">
+              <span class="text-sm font-semibold text-slate-300">📌 Mesa</span>
+              <span class="text-2xl font-black bg-amber-500 text-white px-4 py-0.5 rounded-full shadow-inner">Mesa ${pedido.mesa}</span>
+            </div>
+            
+            <div class="space-y-1 min-h-[100px]">
+              ${itensHTML}
+            </div>
+          </div>
+          
+          <button 
+            class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-base py-3.5 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 transform active:scale-95 transition-all mt-4 cursor-pointer btn-pronto"
+            data-id="${pedido.id}"
+          >
+            <span>👨‍🍳</span> PEDIDO PRONTO!
+          </button>
+        `;
+
+        // Event listener do botão pronto
+        card.querySelector(".btn-pronto").addEventListener("click", () => marcarComoPronto(pedido.id));
+      } else {
+        // Estilo Card Pronto (Histórico)
+        card.className = "bg-slate-800/40 rounded-2xl p-4 border border-slate-700/50 flex flex-col justify-between";
+        
+        const todosItens = [...(pedido.pratos || []), ...(pedido.bebidas || []), ...(pedido.sobremesas || [])];
+        const emojis = todosItens.map(i => i.emoji).join(' ');
+
+        card.innerHTML = `
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-bold text-slate-400">Mesa ${pedido.mesa}</span>
+            <span class="text-xs font-semibold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-800/30">Pronto!</span>
+          </div>
+          <div class="text-xl mb-1 truncate">${emojis}</div>
+          <div class="text-[10px] text-slate-500 truncate">Mesa ${pedido.mesa} finalizada</div>
+        `;
+      }
+
+      return card;
+    }
+
+    // ==========================================
+    // ⚙️ MARCAR COMO PRONTO (MUTATION)
+    // ==========================================
+    async function marcarComoPronto(pedidoId) {
+      // Tocar som de frigideira ou clique
+      tocarSomConclusao();
+
+      try {
+        if (isFirebaseConfigured) {
+          // Atualiza status no Firestore
+          const docRef = doc(db, "pedidos_brincadeira", pedidoId);
+          await updateDoc(docRef, { status: "pronto" });
+        } else {
+          // Modo Simulado Local (localStorage)
+          const pedidosLocais = JSON.parse(localStorage.getItem('pedidos_locais') || '[]');
+          const idx = pedidosLocais.findIndex(p => p.id === pedidoId);
+          if (idx > -1) {
+            pedidosLocais[idx].status = "pronto";
+            localStorage.setItem('pedidos_locais', JSON.stringify(pedidosLocais));
+            
+            // Disparar evento para atualizar o Garçom imediatamente se estiver na mesma aba
+            window.dispatchEvent(new Event('storage'));
+          }
+        }
+        
+        console.log(`Pedido ${pedidoId} marcado como pronto!`);
+      } catch (error) {
+        console.error("Erro ao finalizar pedido: ", error);
+        alert("Erro ao marcar pedido como pronto.");
+      }
+    }
+
+    // ==========================================
+    // 🔔 REAL-TIME EVENT LISTENING
+    // ==========================================
+    function iniciarEscutaRealTime() {
+      if (isFirebaseConfigured) {
+        // Escuta Firebase
+        onSnapshot(collection(db, "pedidos_brincadeira"), (snapshot) => {
+          let lista = [];
+          snapshot.forEach(doc => {
+            lista.push({ id: doc.id, ...doc.data() });
+          });
+          
+          // Ordenar por data ou id (mais novos primeiro na fila de pendentes)
+          todosOsPedidos = lista;
+          renderizarFila();
+          
+          // Se entrou um novo pedido pendente, toca um sininho de aviso
+          detectarNovosPedidos(lista);
+        });
+      } else {
+        // Escuta LocalStorage para simulação local
+        const carregarLocal = () => {
+          const pedidosLocais = JSON.parse(localStorage.getItem('pedidos_locais') || '[]');
+          detectarNovosPedidos(pedidosLocais);
+          todosOsPedidos = pedidosLocais;
+          renderizarFila();
+        };
+
+        window.addEventListener("storage", carregarLocal);
+        carregarLocal(); // carga inicial
+        
+        // Polling de 2s para garantir sincronia local
+        setInterval(carregarLocal, 2000);
+      }
+    }
+
+    let quantidadeAnteriorPendentes = 0;
+
+    function detectarNovosPedidos(listaAtual) {
+      const pendentesAtuais = listaAtual.filter(p => p.status === "pendente").length;
+      if (pendentesAtuais > quantidadeAnteriorPendentes) {
+        // Entrou um novo pedido! Toca o alerta sonoro de cozinha!
+        tocarSomNovoPedido();
+      }
+      quantidadeAnteriorPendentes = pendentesAtuais;
+    }
+
+    // ==========================================
+    // 🎵 ÁUDIO SYNTH LÚDICO (COZINHA)
+    // ==========================================
+    function tocarSomNovoPedido() {
+      try {
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        // Som de apito ou campainha de entrada
+        const osc = context.createOscillator();
+        const gain = context.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(587.33, context.currentTime); // D5
+        osc.frequency.setValueAtTime(659.25, context.currentTime + 0.15); // E5
+        gain.gain.setValueAtTime(0.2, context.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.4);
+        osc.connect(gain);
+        gain.connect(context.destination);
+        osc.start();
+        osc.stop(context.currentTime + 0.4);
+      } catch (e) {}
+    }
+
+    function tocarSomConclusao() {
+      try {
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        // Som de frigideira selando "Sizzling" ou sucesso
+        const bufferSize = context.sampleRate * 0.4;
+        const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        
+        const whiteNoise = context.createBufferSource();
+        whiteNoise.buffer = buffer;
+        
+        const filter = context.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 1000;
+        
+        const gain = context.createGain();
+        gain.gain.setValueAtTime(0.2, context.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.4);
+        
+        whiteNoise.connect(filter);
+        filter.connect(gain);
+        gain.connect(context.destination);
+        whiteNoise.start();
+      } catch (e) {}
+    }
+
+    // Limpar Histórico Local
+    btnLimparHistorico.addEventListener("click", () => {
+      if (confirm("Quer mesmo limpar todos os pedidos da simulação local?")) {
+        localStorage.removeItem('pedidos_locais');
+        localStorage.removeItem('pedidos_enviados_garcom');
+        todosOsPedidos = [];
+        renderizarFila();
+      }
+    });
+
+    // Inicialização
+    iniciarEscutaRealTime();
+
+  </script>
+</body>
+</html>
